@@ -3,6 +3,8 @@ import { compose } from 'recompose';
 
 import {
   AuthUserContext,
+  withAuthorization,
+  withEmailVerification,
 } from '../Session';
 import { withFirebase } from '../Firebase';
 
@@ -102,9 +104,9 @@ class MessagesBase extends Component {
   };
 
   onEditMessage = (message, text) => {
-    console.log(message)
+    const { uid, ...messageSnapshot } = message;
     this.props.firebase.message(message.uid).set({
-      ...message,
+      ...messageSnapshot,
       text,
       editedAt: this.props.firebase.serverValue.TIMESTAMP,
     });
@@ -212,42 +214,39 @@ class MessageItem extends Component {
   onSaveEditText = () => {
     this.props.onEditMessage(this.props.message, this.state.editText);
 
-    this.setState({ editMode: false });
-  };
+    this.setState({ editMode: false }); }
 
   render() {
     const { message, onRemoveMessage } = this.props;
     const { editMode, editText } = this.state;
-    console.log(message)
+
     return (
       <li>
-      {editMode ? (
-        <input
-          type="text"
-          value={editText}
-          onChange={this.onChangeEditText}
-        />
-      ) : (
-        <div>
-          <strong>{message.userId}</strong><span>{message.text}</span> 
-          <div>{message.editedAt ? <span>Edited</span> : null }</div>
-        </div>
-      )}
+        {editMode ? (
+          <input
+            type="text"
+            value={editText}
+            onChange={this.onChangeEditText}
+          />
+        ) : (
+          <span>
+            <strong>{message.userId}</strong> {message.text}
+            {message.editedAt && <span>(Edited)</span>}
+          </span>
+        )}
 
-      {editMode ? (
-        <span>
-          <button onClick={this.onSaveEditText}>Save</button>
-          <button onClick={this.onToggleEditMode}>Reset</button>
-        </span>
-      ) : (
-        <button onClick={this.onToggleEditMode}>Edit</button>
-      )}
-
-    </li>
+        {editMode ? (
+          <span>
+            <button onClick={this.onSaveEditText}>Save</button>
+            <button onClick={this.onToggleEditMode}>Reset</button>
+          </span>
+        ) : (
+          <button onClick={this.onToggleEditMode}>Edit</button>
+        )}
+      </li>
     );
-    }
   }
-
+}
 
 const Messages = withFirebase(MessagesBase);
 
@@ -255,6 +254,6 @@ const condition = authUser => !!authUser;
 
 export default compose(
   withFirebase,
-//   withEmailVerification,
-//   withAuthorization(condition),
+  withEmailVerification,
+  withAuthorization(condition),
 )(HomePage);
